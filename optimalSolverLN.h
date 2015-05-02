@@ -56,7 +56,7 @@ private:
 	vector<Cell*> level;
 	vector<Cell*> level0;
 	Cell* defaultMatrix;
-	Cell* defaultbase;
+	Cell* defaultBase;
 	int matrixSize;
 	int baseSize;
 };

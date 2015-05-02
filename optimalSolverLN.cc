@@ -1,4 +1,4 @@
-#include "optimalSolver.h"
+#include "optimalSolverLN.h"
 #include <cstring>
 #include <cassert>
 #include <iostream>
@@ -71,14 +71,33 @@ void OptimalSolver::init(int readLength, int seedNum) {
 	}
 
 	//Allocate space for the base
-	base = new Cell[base];
-	defaultBase = new Cell[base];
+	base = new Cell[baseSize];
+	defaultBase = new Cell[baseSize];
 	
 	//Allocate space for the matrix
 	matrix = new Cell[matrixSize];
 	defaultMatrix = new Cell[matrixSize];
 
-	
+	//Fill the level0 pointers
+	lvPosCount = readLength + 1 - tree.getHashLength();
+	level0.resize(lvPosCount);
+	int levelIdx = 0;
+	int baseProgress = 0;
+	//Initialize the first one
+	level0[0] = base;
+	for (int i = lvPosCount; i > 0; i--) {
+		levelIdx++;
+		level0[levelIdx] = base + baseProgress;
+		baseProgress += i;
+	}
+
+	//Fill the level pointers. No need to know the last level
+	level.resize(seedNum - 1);
+	levelIdx = 0;
+	int matrixProgress = 0;
+	for (int i = 0; i < seedNum - 1; i++) {
+		
+	}
 
 	//Progress counter
 	int matrixProgress = 0;
