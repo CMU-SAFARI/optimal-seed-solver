@@ -5,38 +5,51 @@
 #include <climits>
 //#define DEBUG
 
-OptimalSolver::OptimalSolver() {
+OptimalSolverLN::OptimalSolverLN() {
 	matrix = NULL;
-	defaultCells = NULL;
+	base = NULL;
+	defaultMatrix = NULL;
+	defaultBase = NULL;
 	readLength = 0;
 	seedNum = 0;
 	matrixSize = 0;
+	baseSize = 0;
 	L0Loaded = false;
 }
 
-OptimalSolver::~OptimalSolver() {
+OptimalSolverLN::~OptimalSolverLN() {
 	if  (matrix != NULL) {
 		delete [] matrix;
 		matrix = NULL;
 	}
-	if  (defaultCells != NULL) {
-		delete [] defaultCells;
-		defaultCells = NULL;
+	if  (base != NULL) {
+		delete [] base;
+		base = NULL;
+	}
+	if  (defaultMatrix != NULL) {
+		delete [] defaultMatrix;
+		defaultMatrix = NULL;
+	}
+	if  (defaultBase != NULL) {
+		delete [] defaultBase;
+		defaultBase = NULL;
 	}
 
 	if (level.size() != 0)
 		level.clear();
+	if (level0.size() != 0)
+		level0.clear();
 }
 
-void OptimalSolver::loadTree(string treeFileName) {
+void OptimalSolverLN::loadTree(string treeFileName) {
 	tree.loadTree(treeFileName);
 }
 
-void OptimalSolver::generateTree(string refFileName) {
+void OptimalSolverLN::generateTree(string refFileName) {
 	tree.generateTree(refFileName);
 }
 
-void OptimalSolver::init(int readLength, int seedNum) {
+void OptimalSolverLN::init(int readLength, int seedNum) {
 	//Initialize the matrix
 	if (matrix != NULL) {
 		delete [] matrix;
@@ -84,62 +97,35 @@ void OptimalSolver::init(int readLength, int seedNum) {
 	int levelIdx = 0;
 	int baseProgress = 0;
 	//Initialize the first one
-	level0[0] = base;
 	for (int i = lvPosCount; i > 0; i--) {
-		levelIdx++;
 		level0[levelIdx] = base + baseProgress;
 		baseProgress += i;
+		levelIdx++;
 	}
 
-	//Fill the level pointers. No need to know the last level
+	//Just to check the baseSize
+	assert (baseProgress == baseSize);
+
+	//Fill the level pointers. No need to have the last level
 	level.resize(seedNum - 1);
 	levelIdx = 0;
 	int matrixProgress = 0;
 	for (int i = 0; i < seedNum - 1; i++) {
-		
+		lvPosCount = readLength + 1 - tree.getHashLength() * (i + 2);
+		level[i] = matrix + matrixProgress + lvPosCount;
+		matrixProgress += lvPosCount;
 	}
-
-	//Progress counter
-	int matrixProgress = 0;
-	//sublevel counter
-	int levelIdx = 0;
-	//Fill the level pointers
-	level.resize(this->seedNum);
-	//Find the first row
-	lvPosCount = readLength + 1 - tree.getHashLength();
-	level[0].resize(lvPosCount);
-	for (int i = lvPosCount; i > 0; i--) {
-		level[0][levelIdx] = matrix + matrixProgress;
-		matrixProgress += i;
-		levelIdx++;
-	}
-
-	//Find the reminding levels
-	for (int idx = 1; idx < this->seedNum - 1; idx++) {
-		lvPosCount = readLength + 1 - tree.getHashLength() * (idx + 2);
-		level[idx].resize(lvPosCount);
-		//reset the sublevel counter
-		levelIdx = 0;
-		for (int i = lvPosCount; i > 0; i--) {
-			level[idx][levelIdx] = matrix + matrixProgress;
-			matrixProgress += i;
-			levelIdx++;
-		}
-	}
-
-	//Set the last level
-	level[this->seedNum - 1].resize(1);
-	level[this->seedNum - 1][0] = matrix + matrixProgress;
 
 	//Just to check the matrixSize
-	assert (matrixProgress + readLength + 1 - this->seedNum * tree.getHashLength() == matrixSize);
+	assert (matrixProgress == matrixSize);
 }
 
-void OptimalSolver::reset() {
-	memcpy(matrix, defaultCells, matrixSize);
+void OptimalSolverLN::reset() {
+	memcpy(matrix, defaultMatrix, matrixSize);
+	memcpy(base, defaultBase, baseSize);
 }
 
-void OptimalSolver::feedL0() {
+void OptimalSolverLN::feedL0() {
 	reset();
 	tree.setHashLength(10);
 	int lvPosCount = readLength + 1 - tree.getHashLength();
@@ -159,10 +145,10 @@ void OptimalSolver::feedL0() {
 			L0Loaded = true;
 }
 
-unsigned int OptimalSolver::solveDNA(string DNA) {
-	int lvPosCount = readLength + 1 - tree.getHashLength();
+void OptimalSolverLN::loadL0(string& DNA) {
 	bool edge_left;
 	bool edge_right;
+	int lvPosCount = readLength + 1 - tree.getHashLength();
 
 	if (!L0Loaded) {
 		assert(DNA.length() == readLength);
@@ -195,64 +181,64 @@ unsigned int OptimalSolver::solveDNA(string DNA) {
 			cout << "*subl" << i << "*: ";
 #endif
 			for (int j = 0; j < lvPosCount - i; j++) {
-				edge_left = level[0][i-1][j].start == j;
-				edge_right = level[0][i-1][j+1].end == j + i + tree.getHashLength() - 1;
+				edge_left = level0[i-1][j].start == j;
+				edge_right = level0[i-1][j+1].end == j + i + tree.getHashLength() - 1;
 
 				// If left edge but not right, copy left seed
 				if (edge_left && !edge_right) {
-					level[0][i][j].isleaf = level[0][i-1][j].isleaf;
-					level[0][i][j].frequency = level[0][i-1][j].frequency;
-					level[0][i][j].start = level[0][i-1][j].start;
-					level[0][i][j].end = level[0][i-1][j].end;
+					level0[i][j].isleaf = level0[i-1][j].isleaf;
+					level0[i][j].frequency = level0[i-1][j].frequency;
+					level0[i][j].start = level0[i-1][j].start;
+					level0[i][j].end = level0[i-1][j].end;
 				}
 				// If right edge but not left, copy right seed
 				else if (!edge_left && edge_right) {
-					level[0][i][j].isleaf = level[0][i-1][j+1].isleaf;
-					level[0][i][j].frequency = level[0][i-1][j+1].frequency;
-					level[0][i][j].start = level[0][i-1][j+1].start;
-					level[0][i][j].end = level[0][i-1][j+1].end;
+					level0[i][j].isleaf = level0[i-1][j+1].isleaf;
+					level0[i][j].frequency = level0[i-1][j+1].frequency;
+					level0[i][j].start = level0[i-1][j+1].start;
+					level0[i][j].end = level0[i-1][j+1].end;
 				}
 				// If both are edging, then we have to test potentially three cases
 				else if (edge_left && edge_right) {
 					// If left is not leaf, always merge
-					if (!level[0][i-1][j].isleaf) {
+					if (!level0[i-1][j].isleaf) {
 						string seed = DNA.substr(j, tree.getHashLength() + i);
 
 						//TODO: Optimize query
 						tree.query(seed);
-						level[0][i][j].isleaf = tree.isLeaf();
-						level[0][i][j].frequency = tree.frequency();
-						level[0][i][j].start = j;
-						level[0][i][j].end = j + tree.getHashLength() + i - 1;
+						level0[i][j].isleaf = tree.isLeaf();
+						level0[i][j].frequency = tree.frequency();
+						level0[i][j].start = j;
+						level0[i][j].end = j + tree.getHashLength() + i - 1;
 					}
 					// Check left seed vs right seed if not merging.
 					else {
 						// Prioritize left position over right position
-						if (level[0][i-1][j].frequency <= level[0][i-1][j+1].frequency) {
-							level[0][i][j].isleaf = level[0][i-1][j].isleaf;
-							level[0][i][j].frequency = level[0][i-1][j].frequency;
-							level[0][i][j].start = level[0][i-1][j].start;
-							level[0][i][j].end = level[0][i-1][j].end;
+						if (level0[i-1][j].frequency <= level0[i-1][j+1].frequency) {
+							level0[i][j].isleaf = level0[i-1][j].isleaf;
+							level0[i][j].frequency = level0[i-1][j].frequency;
+							level0[i][j].start = level0[i-1][j].start;
+							level0[i][j].end = level0[i-1][j].end;
 						}
 						else {
-							level[0][i][j].isleaf = level[0][i-1][j+1].isleaf;
-							level[0][i][j].frequency = level[0][i-1][j+1].frequency;
-							level[0][i][j].start = level[0][i-1][j+1].start;
-							level[0][i][j].end = level[0][i-1][j+1].end;
+							level0[i][j].isleaf = level0[i-1][j+1].isleaf;
+							level0[i][j].frequency = level0[i-1][j+1].frequency;
+							level0[i][j].start = level0[i-1][j+1].start;
+							level0[i][j].end = level0[i-1][j+1].end;
 						}
 					}
 
 				}
 				// None is edging. The left and right seed should be equal.
 				else {
-					assert(level[0][i-1][j].start == level[0][i-1][j+1].start);
-					assert(level[0][i-1][j].end == level[0][i-1][j+1].end);
-					assert(level[0][i-1][j].frequency == level[0][i-1][j+1].frequency);
-					assert(level[0][i-1][j].isleaf == level[0][i-1][j+1].isleaf);
-					level[0][i][j].start = level[0][i-1][j].start;
-					level[0][i][j].end = level[0][i-1][j].end;
-					level[0][i][j].frequency = level[0][i-1][j].frequency;
-					level[0][i][j].isleaf = level[0][i-1][j].isleaf;
+					assert(level0[i-1][j].start == level0[i-1][j+1].start);
+					assert(level0[i-1][j].end == level0[i-1][j+1].end);
+					assert(level0[i-1][j].frequency == level0[i-1][j+1].frequency);
+					assert(level0[i-1][j].isleaf == level0[i-1][j+1].isleaf);
+					level0[i][j].start = level0[i-1][j].start;
+					level0[i][j].end = level0[i-1][j].end;
+					level0[i][j].frequency = level0[i-1][j].frequency;
+					level0[i][j].isleaf = level0[i-1][j].isleaf;
 				}
 
 #ifdef DEBUG
@@ -264,18 +250,32 @@ unsigned int OptimalSolver::solveDNA(string DNA) {
 #endif
 		}
 	}
+}
 
-	//Now calculate the middle levels
+
+unsigned int OptimalSolverLN::solveDNA(string DNA) {
+	bool edge_left;
+	bool edge_right;
+
+	//Load all substrings
+	loadL0(DNA);
+
+	//Fill level 0
+	int lvPosCount = readLength + 1 - tree.getHashLength() * 2;
+	for (int length = 0; length < lvPosCount; length++) {
+		level[0][length].start = level0[length][0].start;
+		level[0][length].end = level0[length][0].end;
+		level[0][length].frequency = level0[length][0].frequency;
+	}
+
+	//Now calculate the rest levels
 	for (int l = 1; l < seedNum - 1; l++) {
-#ifdef DEBUG
-		cout << "*L" << l << "*: " << endl << "*subl 0*: ";
-#endif
-		//Execpt the first level, all the rest levels do not have the last hashLength entries
 		lvPosCount = readLength + 1 - tree.getHashLength() * (l + 2);
 		//Fill up the first layer
-		for (int j = 0; j <lvPosCount; j++) {
-			level[l][0][j].start = j;
-			level[l][0][j].end = j + (l + 1) * tree.getHashLength() - 1;
+		for (int div = lvPosCount; div >= 0; div--) {
+
+			level[l][length].start = j;
+			level[l][length].end = j + (l + 1) * tree.getHashLength() - 1;
 
 			// Get left seed. Left seed from previous level
 			level[l][0][j].lstart = j;

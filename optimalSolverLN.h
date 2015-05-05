@@ -30,10 +30,10 @@ struct Cell {
 	unsigned int rfreq;
 };
 
-class OptimalSolver {
+class OptimalSolverLN {
 public:
-	OptimalSolver();
-	~OptimalSolver();
+	OptimalSolverLN();
+	~OptimalSolverLN();
 	void loadTree(string treeFileName);
 	void generateTree(string treeFileName);
 	void init(int readLength, int seedNum);
@@ -42,6 +42,9 @@ public:
 	void print();
 
 private:
+	//Internal functions
+	void loadL0(string DNA);
+
 	//This is for debugging
 	void feedL0();
 	bool L0Loaded;
