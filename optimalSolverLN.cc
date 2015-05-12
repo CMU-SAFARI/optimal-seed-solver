@@ -43,6 +43,8 @@ OptimalSolverLN::~OptimalSolverLN() {
 
 void OptimalSolverLN::loadTree(string treeFileName) {
 	tree.loadTree(treeFileName);
+	minLength = tree.getHashLength();
+	maxLength = tree.getFullLength();
 }
 
 void OptimalSolverLN::generateTree(string refFileName) {
@@ -58,10 +60,10 @@ void OptimalSolverLN::init(int readLength, int seedNum) {
 
 	this->readLength = readLength;
 
-	if (readLength >= seedNum * tree.getHashLength() )
+	if (readLength >= seedNum * minLength)
 		this->seedNum = seedNum;
 	else
-		this->seedNum = readLength / tree.getHashLength();
+		this->seedNum = readLength / minLength;
 
 	//Position count for the level
 	int lvPosCount;
@@ -71,7 +73,7 @@ void OptimalSolverLN::init(int readLength, int seedNum) {
 	baseSize = 0;
 
 	//For the base case, we need to consider all possible seeds
-	lvPosCount = readLength + 1 - tree.getHashLength();
+	lvPosCount = readLength + 1 - minLength;
 	baseSize = (lvPosCount + 1) * lvPosCount / 2;
 
 	//For the matrix, we need to consider all cases, while leaving
@@ -79,7 +81,7 @@ void OptimalSolverLN::init(int readLength, int seedNum) {
 	for (int i = 0; i < this->seedNum - 1; i++) {
 		//Notice that for the rest levels, we do not need to consider the last
 		//hashLength positions
-		lvPosCount = readLength + 1 - tree.getHashLength() * (i + 2);
+		lvPosCount = readLength + 1 - minLength * (i + 2);
 		matrixSize += lvPosCount;
 	}
 
@@ -92,7 +94,7 @@ void OptimalSolverLN::init(int readLength, int seedNum) {
 	defaultMatrix = new Cell[matrixSize];
 
 	//Fill the level0 pointers
-	lvPosCount = readLength + 1 - tree.getHashLength();
+	lvPosCount = readLength + 1 - minLength;
 	level0.resize(lvPosCount);
 	int levelIdx = 0;
 	int baseProgress = 0;
@@ -111,7 +113,7 @@ void OptimalSolverLN::init(int readLength, int seedNum) {
 	levelIdx = 0;
 	int matrixProgress = 0;
 	for (int i = 0; i < seedNum - 1; i++) {
-		lvPosCount = readLength + 1 - tree.getHashLength() * (i + 2);
+		lvPosCount = readLength + 1 - minLength * (i + 2);
 		level[i] = matrix + matrixProgress + lvPosCount;
 		matrixProgress += lvPosCount;
 	}
@@ -128,7 +130,7 @@ void OptimalSolverLN::reset() {
 void OptimalSolverLN::feedL0() {
 	reset();
 	tree.setHashLength(10);
-	int lvPosCount = readLength + 1 - tree.getHashLength();
+	int lvPosCount = readLength + 1 - minLength;
 
 	for (int i = 0; i < lvPosCount; i++) {
 		for (int j = 0; j < lvPosCount - i; j++) {
@@ -148,7 +150,7 @@ void OptimalSolverLN::feedL0() {
 void OptimalSolverLN::loadL0(string& DNA) {
 	bool edge_left;
 	bool edge_right;
-	int lvPosCount = readLength + 1 - tree.getHashLength();
+	int lvPosCount = readLength + 1 - minLength;
 
 	if (!L0Loaded) {
 		assert(DNA.length() == readLength);
@@ -161,10 +163,10 @@ void OptimalSolverLN::loadL0(string& DNA) {
 		cout << "*L0*: " << endl << "*subl 0*: ";
 #endif
 		for (int i = 0; i < lvPosCount; i++) {
-			string seed = DNA.substr(i, tree.getHashLength() );
+			string seed = DNA.substr(i, minLength);
 			tree.query(seed);
 			level0[0][i].start = i;
-			level0[0][i].end = i + tree.getHashLength() - 1;
+			level0[0][i].end = i + minLength - 1;
 			level0[0][i].frequency = tree.frequency();
 			level0[0][i].isleaf = tree.isLeaf();
 
@@ -182,7 +184,7 @@ void OptimalSolverLN::loadL0(string& DNA) {
 #endif
 			for (int j = 0; j < lvPosCount - i; j++) {
 				edge_left = level0[i-1][j].start == j;
-				edge_right = level0[i-1][j+1].end == j + i + tree.getHashLength() - 1;
+				edge_right = level0[i-1][j+1].end == j + i + minLength - 1;
 
 				// If left edge but not right, copy left seed
 				if (edge_left && !edge_right) {
@@ -202,14 +204,14 @@ void OptimalSolverLN::loadL0(string& DNA) {
 				else if (edge_left && edge_right) {
 					// If left is not leaf, always merge
 					if (!level0[i-1][j].isleaf) {
-						string seed = DNA.substr(j, tree.getHashLength() + i);
+						string seed = DNA.substr(j, minLength + i);
 
 						//TODO: Optimize query
 						tree.query(seed);
 						level0[i][j].isleaf = tree.isLeaf();
 						level0[i][j].frequency = tree.frequency();
 						level0[i][j].start = j;
-						level0[i][j].end = j + tree.getHashLength() + i - 1;
+						level0[i][j].end = j + minLength + i - 1;
 					}
 					// Check left seed vs right seed if not merging.
 					else {
@@ -254,328 +256,107 @@ void OptimalSolverLN::loadL0(string& DNA) {
 
 
 unsigned int OptimalSolverLN::solveDNA(string DNA) {
-	bool edge_left;
-	bool edge_right;
-
 	//Load all substrings
 	loadL0(DNA);
 
 	//Fill level 0
-	int lvPosCount = readLength + 1 - tree.getHashLength() * 2;
-	for (int length = 0; length < lvPosCount; length++) {
-		level[0][length].start = level0[length][0].start;
-		level[0][length].end = level0[length][0].end;
-		level[0][length].frequency = level0[length][0].frequency;
+	int lvPosCount = readLength + 1 - minLength * 2;
+	for (int pos = 0; pos < lvPosCount; pos++) {
+		level[0][pos].start = level0[pos][0].start;
+		level[0][pos].end = level0[pos][0].end;
+		level[0][pos].frequency = level0[pos][0].frequency;
 	}
+
+	int opt_div;
 
 	//Now calculate the rest levels
 	for (int l = 1; l < seedNum - 1; l++) {
-		lvPosCount = readLength + 1 - tree.getHashLength() * (l + 2);
-		//Fill up the first layer
-		for (int div = lvPosCount; div >= 0; div--) {
 
-			level[l][length].start = j;
-			level[l][length].end = j + (l + 1) * tree.getHashLength() - 1;
+		lvPosCount = readLength - minLength * (l + 2);
+		opt_div = solve_first_optimal(lvPosCount, lvPosCount, l);
+		level[l][lvPosCount].lstart = level[l-1][opt_div].start;
+		level[l][lvPosCount].lend = level[l-1][opt_div].end;
+		level[l][lvPosCount].lfreq = level[l-1][opt_div].frequency;
+		level[l][lvPosCount].rstart = level0[lvPosCount - opt_div][opt_div + l * minLength].start;
+		level[l][lvPosCount].rend = level0[lvPosCount - opt_div][opt_div + l * minLength].end;
+		level[l][lvPosCount].rfreq = level0[lvPosCount - opt_div][opt_div + l * minLength].frequency;
+		level[l][lvPosCount].frequency = level[l][lvPosCount].lfreq + level[l][lvPosCount].rfreq;
+	
+		for (int pos = lvPosCount - 1; pos >= 0; pos--) {
 
-			// Get left seed. Left seed from previous level
-			level[l][0][j].lstart = j;
-			level[l][0][j].lend = j + l * tree.getHashLength() - 1;
-			level[l][0][j].lfreq = level[l-1][0][j].frequency;
-
-			// Get right seed. Right seed from 0 level
-			level[l][0][j].rstart = j + l * tree.getHashLength();
-			level[l][0][j].rend = j + (l + 1) * tree.getHashLength() - 1;
-			level[l][0][j].rfreq = level[0][0][j+l*tree.getHashLength()].frequency;
-
-			//Get freq from level 0 for the right part
-			level[l][0][j].frequency = level[l][0][j].lfreq + level[l][0][j].rfreq;
-#ifdef DEBUG
-			cout << level[l][0][j].start << "|"
-				<< level[l][0][j].lstart << "-" << level[l][0][j].lend << ":" << level[l][0][j].lfreq << "|"
-				<< level[l][0][j].rstart << "-" << level[l][0][j].rend << ":" << level[l][0][j].rfreq
-				<< "|" << level[l][0][j].end << ":" << level[l][0][j].frequency << "+";
-#endif
+			if (opt_div > pos)
+				opt_div = pos;
+		
+			opt_div = solve_first_optimal(opt_div, pos, l);
+		
+			level[l][pos].lstart = level[l-1][opt_div].start;
+			level[l][pos].lend = level[l-1][opt_div].end;
+			level[l][pos].lfreq = level[l-1][opt_div].frequency;
+			level[l][pos].rstart = level0[pos - opt_div][opt_div + l * minLength].start;
+			level[l][pos].rend = level0[pos - opt_div][opt_div + l * minLength].end;
+			level[l][pos].rfreq = level0[pos - opt_div][opt_div + l * minLength].frequency;
+			level[l][pos].frequency = level[l][pos].lfreq + level[l][pos].rfreq;
 		}
 #ifdef DEBUG
+		for (int pos = lvPosCount; pos >= 0; pos--) {
+			cout << pos << "-" << pos + l * minLength - 1 << ":" << level[l][pos].lstart << "-"
+					<< level[l][pos].lend << "(" << level[l][pos].lfreq << ")"
+					<< level[l][pos].rstart << "-" << level[l][pos].rend << "("
+					<< level[l][pos].rfreq << "):" << level[l][pos].frequency << " ";
+		
+		}
 		cout << endl;
 #endif
-
-		//Fill up the rest layers, similar to before. Check left_edge and right_edge
-		for (int i = 1; i < lvPosCount; i++) {
-
-#ifdef DEBUG
-			cout << "*subl" << i << "*: ";
-#endif
-
-			for (int j = 0; j < lvPosCount - i; j++) {
-				// Test if we touch edges
-				edge_left = level[l][i-1][j].start == j;
-				edge_right = level[l][i-1][j+1].end == j + i + (l + 1) * tree.getHashLength() - 1;
-
-				// If left edge but not right, copy left seed
-				if (edge_left && !edge_right) {
-					level[l][i][j].frequency = level[l][i-1][j].frequency;
-					level[l][i][j].start = level[l][i-1][j].start;
-					level[l][i][j].end = level[l][i-1][j].end;
-					level[l][i][j].lstart = level[l][i-1][j].lstart;
-					level[l][i][j].lend = level[l][i-1][j].lend;
-					level[l][i][j].lfreq = level[l][i-1][j].lfreq;
-					level[l][i][j].rstart = level[l][i-1][j].rstart;
-					level[l][i][j].rend = level[l][i-1][j].rend;
-					level[l][i][j].rfreq = level[l][i-1][j].rfreq;
-				}
-				// If right edge but not left, copy right seed
-				else if (!edge_left && edge_right) {
-					level[l][i][j].frequency = level[l][i-1][j+1].frequency;
-					level[l][i][j].start = level[l][i-1][j+1].start;
-					level[l][i][j].end = level[l][i-1][j+1].end;
-					level[l][i][j].lstart = level[l][i-1][j+1].lstart;
-					level[l][i][j].lend = level[l][i-1][j+1].lend;
-					level[l][i][j].lfreq = level[l][i-1][j+1].lfreq;
-					level[l][i][j].rstart = level[l][i-1][j+1].rstart;
-					level[l][i][j].rend = level[l][i-1][j+1].rend;
-					level[l][i][j].rfreq = level[l][i-1][j+1].rfreq;
-				}
-				// If both are edging, then we have test potentially three cases
-				else if (edge_left && edge_right) {
-					// First get the best config from the two seeds.
-					// Prioritize left position over right position
-					if (level[l][i-1][j].frequency <= level[l][i-1][j+1].frequency) {
-						level[l][i][j].frequency = level[l][i-1][j].frequency;
-						level[l][i][j].start = level[l][i-1][j].start;
-						level[l][i][j].end = level[l][i-1][j].end;
-						level[l][i][j].lstart = level[l][i-1][j].lstart;
-						level[l][i][j].lend = level[l][i-1][j].lend;
-						level[l][i][j].lfreq = level[l][i-1][j].lfreq;
-						level[l][i][j].rstart = level[l][i-1][j].rstart;
-						level[l][i][j].rend = level[l][i-1][j].rend;
-						level[l][i][j].rfreq = level[l][i-1][j].rfreq;
-					}
-					else {
-						level[l][i][j].frequency = level[l][i-1][j+1].frequency;
-						level[l][i][j].start = level[l][i-1][j+1].start;
-						level[l][i][j].end = level[l][i-1][j+1].end;
-						level[l][i][j].lstart = level[l][i-1][j+1].lstart;
-						level[l][i][j].lend = level[l][i-1][j+1].lend;
-						level[l][i][j].lfreq = level[l][i-1][j+1].lfreq;
-						level[l][i][j].rstart = level[l][i-1][j+1].rstart;
-						level[l][i][j].rend = level[l][i-1][j+1].rend;
-						level[l][i][j].rfreq = level[l][i-1][j+1].rfreq;
-					}
-
-					// We set the divider as the beginning for the second seed.
-					for (int d = level[l][i-1][j].lend + 1; d <= level[l][i-1][j+1].rstart; d++) {
-						//						cout << "&d:" << d << "&";
-						//						cout << "left:" << "level[" << l-1 <<"][" << d - j - l * tree.getHashLength() 
-						//							<< "][" << j <<"]|" << level[l-1][d - j - l * tree.getHashLength()][j].start << "-"
-						//
-						//							<< level[l-1][d - j - l * tree.getHashLength()][j].end << ":"
-						//							<< level[l-1][d - j - l * tree.getHashLength()][j].frequency << "|";
-						//
-						//						cout << "right:" << "level[0][" << j + i + tree.getHashLength() - d 
-						//							<< "][" << d <<"]|" << level[0][j + i + tree.getHashLength() - d][d].start << "-"
-						//
-						//							<< level[0][j + i +  tree.getHashLength() - d][d].end << ":"
-						//							<< level[0][j + i + tree.getHashLength() - d][d].frequency;
-						//
-						//						cout << "	";
-
-						// Stop when left stoped touching edge
-						if (level[l-1][d - j - l * tree.getHashLength()][j].start != j)
-							break;
-				
-						// Continue until the right reaches edge
-						if (level[0][j + i + l * tree.getHashLength() - d][d].end !=
-								j + i + (l + 1) * tree.getHashLength() - 1)
-							continue;
-
-						// If smaller or equal && prioritize left
-						if (level[l-1][d - j - l * tree.getHashLength()][j].frequency +
-								level[0][j + i + l * tree.getHashLength() - d][d].frequency
-								< level[l][i][j].frequency
-								||
-								(level[l-1][d - j - l * tree.getHashLength()][j].frequency +
-								 level[0][j + i + l * tree.getHashLength() - d][d].frequency
-								 == level[l][i][j].frequency && level[l][i][j].start != j)
-						   ) {
-							level[l][i][j].start = j;
-							level[l][i][j].end = j + i + (l + 1) * tree.getHashLength() - 1;
-							level[l][i][j].lstart = j;
-							level[l][i][j].lend = level[l-1][d - j - l * tree.getHashLength()][j].end;
-							level[l][i][j].lfreq = level[l-1][d - j - l * tree.getHashLength()][j].frequency;
-							level[l][i][j].rstart = level[0][j + i + l * tree.getHashLength() - d][d].start;
-							level[l][i][j].rend = j + i + (l + 1) * tree.getHashLength() - 1;
-							level[l][i][j].rfreq = level[0][j + i + l * tree.getHashLength() - d][d].frequency;
-							level[l][i][j].frequency = level[l][i][j].lfreq + level[l][i][j].rfreq;
-						}
-					}
-				}
-				// None is edging. The left and right seed should be equal.
-				else {
-					//cout << "i: " << i << " j: " << j << endl;
-					assert(level[l][i-1][j].start == level[l][i-1][j+1].start);
-					assert(level[l][i-1][j].end == level[l][i-1][j+1].end);
-					assert(level[l][i-1][j].frequency == level[l][i-1][j+1].frequency);
-					assert(level[l][i-1][j].lstart == level[l][i-1][j+1].lstart);
-					assert(level[l][i-1][j].lend == level[l][i-1][j+1].lend);
-					assert(level[l][i-1][j].lfreq == level[l][i-1][j+1].lfreq);
-					assert(level[l][i-1][j].rstart == level[l][i-1][j+1].rstart);
-					assert(level[l][i-1][j].rend == level[l][i-1][j+1].rend);
-					assert(level[l][i-1][j].rfreq == level[l][i-1][j+1].rfreq);
-					level[l][i][j].start = level[l][i-1][j].start;
-					level[l][i][j].end = level[l][i-1][j].end;
-					level[l][i][j].frequency = level[l][i-1][j].frequency;
-					level[l][i][j].lstart = level[l][i-1][j].lstart;
-					level[l][i][j].lend = level[l][i-1][j].lend;
-					level[l][i][j].lfreq = level[l][i-1][j].lfreq;
-					level[l][i][j].rstart = level[l][i-1][j].rstart;
-					level[l][i][j].rend = level[l][i-1][j].rend;
-					level[l][i][j].rfreq = level[l][i-1][j].rfreq;
-				}
-#ifdef DEBUG
-				cout << level[l][i][j].start << "|"
-					<< level[l][i][j].lstart << "-" << level[l][i][j].lend << ":" << level[l][i][j].lfreq << "|"
-					<< level[l][i][j].rstart << "-" << level[l][i][j].rend << ":" << level[l][i][j].rfreq
-					<< "|" << level[l][i][j].end << ":" << level[l][i][j].frequency << "+ ";
-#endif
-			}
-#ifdef DEBUG
-			cout << endl;
-#endif
-		}
-
 	}
 
 	// The last level... In fact we don't need to feel it up.
 	// The same as previous divider, we choose the divider as the starting position of the right seed
-	unsigned int leftDiv = (seedNum - 1) * tree.getHashLength();
-	unsigned int rightDiv = readLength - tree.getHashLength();
-
 	unsigned int bestFreq = UINT_MAX;
-	unsigned int bestDiv;
-	unsigned int frequency;
 
 	if (seedNum > 1) {
-		// Check leftDiv first
-		frequency = 0;
-		frequency += level[seedNum-2][leftDiv-(seedNum-1)*tree.getHashLength()][0].frequency;
-		frequency += level[0][readLength-leftDiv-tree.getHashLength()][leftDiv].frequency;
-
-#ifdef DEBUG
-		cout << "leftDiv: " << leftDiv << " f: " << frequency << "	";
-#endif
-
-		if (frequency < bestFreq) {
-			bestFreq = frequency;
-			bestDiv = leftDiv;
-		}
-
-		// Check rightDiv next
-		frequency = 0;
-		frequency += level[seedNum-2][rightDiv-(seedNum-1)*tree.getHashLength()][0].frequency;
-		frequency += level[0][readLength-rightDiv-tree.getHashLength()][rightDiv].frequency;
-
-#ifdef DEBUG
-		cout << "rightDiv: " << rightDiv << " f: " << frequency << "	" << endl;
-#endif
-
-		if (frequency < bestFreq) {
-			bestFreq = frequency;
-			bestDiv = rightDiv;
-		}
-
-		while (leftDiv <= rightDiv) {
-			// Update the 2 divs
-			if (level[0][readLength-leftDiv-tree.getHashLength()][leftDiv].start != leftDiv)
-				leftDiv = level[0][readLength-leftDiv-tree.getHashLength()][leftDiv].start;
-			else
-				leftDiv++;
-
-			if (level[seedNum-2][rightDiv-(seedNum-1)*tree.getHashLength()][0].end != rightDiv - 1)
-				rightDiv = level[seedNum-2][rightDiv-(seedNum-1)*tree.getHashLength()][0].end + 1;
-			else
-				rightDiv--;
-
-			// Check leftDiv first
-			frequency = 0;
-			frequency += level[seedNum-2][leftDiv-(seedNum-1)*tree.getHashLength()][0].frequency;
-			frequency += level[0][readLength-leftDiv-tree.getHashLength()][leftDiv].frequency;
-
-#ifdef DEBUG
-			cout << "leftDiv: " << leftDiv << " f: " << frequency << "	";
-#endif
-
-			if (frequency < bestFreq) {
-				bestFreq = frequency;
-				bestDiv = leftDiv;
-			}
-
-			// Check rightDiv next
-			frequency = 0;
-			frequency += level[seedNum-2][rightDiv-(seedNum-1)*tree.getHashLength()][0].frequency;
-			frequency += level[0][readLength-rightDiv-tree.getHashLength()][rightDiv].frequency;
-
-#ifdef DEBUG
-			cout << "rightDiv: " << rightDiv << " f: " << frequency << "	" << endl;
-#endif
-
-			if (frequency < bestFreq) {
-				bestFreq = frequency;
-				bestDiv = rightDiv;
-			}
-
-		}
+		lvPosCount = readLength + 1 - seedNum * minLength;
+		opt_div = solve_first_optimal(lvPosCount + 1, lvPosCount, seedNum - 1);
+		bestFreq = level[seedNum - 2][opt_div - (seedNum - 2) * minLength - 1].frequency + level0[lvPosCount - opt_div][opt_div].frequency;
 	}
 	else {
-		bestDiv = readLength;
-		bestFreq = level[0][readLength - tree.getHashLength()][0].frequency;
+		opt_div = readLength;
+		bestFreq = level0[readLength - minLength][0].frequency;
 	}
 
 #ifdef DEBUG
 	cout << "bestDiv: " << bestDiv << endl;
 	cout << "bestFreq: " << bestFreq << endl;
 #endif
-	//	
-	//	// Print seeds from right to left
-	//	string seed;
-	//	int levelLength = readLength;
-	//	int levelDiv = bestDiv;
-	//	int seedPos;
-	//	int seedLength;
-	//
-	//	for (int l = seedNum - 2; l >= 0; l--) {
-	//		seedPos = level[0][levelLength - levelDiv - tree.getHashLength()][levelDiv].start;
-	//		seedLength = level[0][levelLength - levelDiv - tree.getHashLength()][levelDiv].end - seedPos + 1;
-	//		seed = DNA.substr(seedPos, seedLength);
-	//
-	//		cout << "seed: " << seed << " at " << seedPos << " with frequency of "
-	//			<< level[0][levelLength - levelDiv - tree.getHashLength()][levelDiv].frequency << endl;
-	//		
-	//		cout << "Checking seed[0][" << levelLength - levelDiv - tree.getHashLength() << "][" << levelDiv
-	//			<< "]|" << level[0][levelLength - levelDiv - tree.getHashLength()][levelDiv].start
-	//			<< "-" << level[0][levelLength - levelDiv - tree.getHashLength()][levelDiv].end
-	//			<< ":" << level[0][levelLength - levelDiv - tree.getHashLength()][levelDiv].frequency << endl;
-	//
-	//		if (l != 0) {
-	//			levelLength = level[l][levelDiv - (l+1) * tree.getHashLength()][0].end + 1;	
-	//			levelDiv = level[l][levelDiv - (l+1) * tree.getHashLength()][0].lend + 1;
-	//		}
-	//	}
-	//	// Print the last, the left most seed
-	//	seedPos = level[0][levelDiv - tree.getHashLength()][0].start;
-	//	seedLength = level[0][levelDiv - tree.getHashLength()][0].end + 1
-	//		- level[0][levelDiv - tree.getHashLength()][0].start;
-	//	seed = DNA.substr(seedPos, seedLength);
-	//	cout << "seed: " << seed << " at " << 0 << " with frequency of "
-	//		<< level[0][levelDiv - tree.getHashLength()][0].frequency << endl;
-	//		
-	//	cout << "Checking seed[0][" << levelDiv - tree.getHashLength() 
-	//		<< "[0]|" << level[0][levelDiv - tree.getHashLength()][0].start
-	//		<< "-" << level[0][levelDiv - tree.getHashLength()][0].end
-	//		<< ":" << level[0][levelDiv - tree.getHashLength()][0].frequency << endl;
-
 	L0Loaded = false;
 
 	return bestFreq;
+}
+
+int OptimalSolverLN::solve_first_optimal(int opt_div, int pos, int l) {
+	int lend = level[l-1][opt_div].end;
+	int lfreq = level[l-1][opt_div].frequency;
+	int rfreq = level0[pos - opt_div][opt_div + l * minLength].frequency;
+	int minFreq = lfreq + rfreq;
+	int prev_lfreq = lfreq;
+	int pref_rfreq = rfreq;
+
+	for (int div = pos - 1; div >= 0; div--) {
+		lfreq = level[l-1][opt_div].frequency;
+		rfreq = level0[pos - opt_div][opt_div + l * minLength].frequency;
+
+		if (lfreq + rfreq <= minFreq)
+			opt_div = div;
+
+		//early divider termination
+		if (lfreq - prev_lfreq < pref_rfreq)
+			break;
+
+		//divider sprinting left
+		if (div + l * minLength > lend + 1) {
+			div = lend + 1 - l * minLength;
+		}
+	}
+
+	return opt_div;
 }
 

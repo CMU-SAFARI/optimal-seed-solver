@@ -43,7 +43,9 @@ public:
 
 private:
 	//Internal functions
-	void loadL0(string DNA);
+	void loadL0(string& DNA);
+	//returns the location of div in read
+	int solve_first_optimal(int opt_div, int pos, int l);
 
 	//This is for debugging
 	void feedL0();
@@ -53,6 +55,8 @@ private:
 
 	int readLength;
 	int seedNum;
+	int minLength;
+	int maxLength;
 
 	Cell* matrix;
 	Cell* base;
