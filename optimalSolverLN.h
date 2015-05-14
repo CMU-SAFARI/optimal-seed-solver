@@ -44,7 +44,9 @@ public:
 	unsigned int calcualteFreq();
 	void print();
 	
-	//This is for debugging
+	void backtrace();
+	
+	//For debugging
 	void setMinLength(int minLength);
 	void feedL0();
 
@@ -72,6 +74,8 @@ private:
 	Cell* defaultBase;
 	int matrixSize;
 	int baseSize;
+
+	vector<Cell> seeds;
 
 	unsigned int finalDiv;
 };

@@ -23,7 +23,6 @@ OptimalSolverLN::~OptimalSolverLN() {
 		delete [] matrix;
 		matrix = NULL;
 	}
-/*
 	if  (base != NULL) {
 		delete [] base;
 		base = NULL;
@@ -32,8 +31,6 @@ OptimalSolverLN::~OptimalSolverLN() {
 		delete [] defaultMatrix;
 		defaultMatrix = NULL;
 	}
-*/
-/*
 	if  (defaultBase != NULL) {
 		delete [] defaultBase;
 		defaultBase = NULL;
@@ -43,7 +40,8 @@ OptimalSolverLN::~OptimalSolverLN() {
 		level.clear();
 	if (level0.size() != 0)
 		level0.clear();
-*/
+	if (seeds.size() != 0)
+		seeds.clear();
 }
 
 void OptimalSolverLN::loadTree(string treeFileName) {
@@ -73,7 +71,6 @@ void OptimalSolverLN::init(int readLength, int seedNum) {
 		delete [] defaultBase;
 		defaultBase = NULL;
 	}
-
 
 	this->readLength = readLength;
 
@@ -140,6 +137,9 @@ void OptimalSolverLN::init(int readLength, int seedNum) {
 
 	//Just to check the matrixSize
 	assert (matrixProgress == matrixSize);
+
+	//Initialize all the seeds
+	seeds.resize(seedNum);
 }
 
 void OptimalSolverLN::reset() {
@@ -444,3 +444,16 @@ int OptimalSolverLN::solveFirstOptimal(int opt_div, int pos, int l) {
 	return opt_div;
 }
 
+void OptimalSolverLN::backtrace() {
+	int seedIdx = seedNum - 1;
+	int level0lv = readLength - seedNum * minLength - finalDiv;
+	int totalLength = finalDiv + (seedNum - 1) * minLength;
+	seeds[seedIdx].start = level0[level0lv][totalLength].start;
+	seeds[seedIdx].end = level0[level0lv][totalLength].end;
+	seeds[seedIdx].frequency = level0[level0lv][totalLength].frequency;
+
+	for (int i = 0; i < seedNum - 1; i++) {
+		seedIdx = seedNum - 2;
+	}
+
+}
