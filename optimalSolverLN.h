@@ -38,17 +38,24 @@ public:
 	void generateTree(string treeFileName);
 	void init(int readLength, int seedNum);
 	void reset();
-	unsigned solveDNA(string DNA);
+	unsigned int solveDNA(string& DNA);
+	void fillMatrix(string& DNA);
+	unsigned int calculateLastDiv();
+	unsigned int calcualteFreq();
 	void print();
+	
+	//This is for debugging
+	void setMinLength(int minLength);
+	void feedL0();
 
 private:
 	//Internal functions
+	//Load the first level (level[0])
 	void loadL0(string& DNA);
-	//returns the location of div in read
-	int solve_first_optimal(int opt_div, int pos, int l);
+	//Returns the location of the first optimal div in read
+	int solveFirstOptimal(int opt_div, int pos, int l);
 
 	//This is for debugging
-	void feedL0();
 	bool L0Loaded;
 	
 	HashTree tree;
@@ -56,7 +63,6 @@ private:
 	int readLength;
 	int seedNum;
 	int minLength;
-	int maxLength;
 
 	Cell* matrix;
 	Cell* base;
@@ -66,4 +72,6 @@ private:
 	Cell* defaultBase;
 	int matrixSize;
 	int baseSize;
+
+	unsigned int finalDiv;
 };

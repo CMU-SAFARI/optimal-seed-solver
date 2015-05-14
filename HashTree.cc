@@ -205,7 +205,7 @@ void HashTree::addEntry(const string& DNA, unsigned int chrNum, unsigned int loc
 	 */
 
 	//The depth depends on the length of the string: DNA
-	for (int i = hashLength; i < DNA.length(); i++) {
+	for (int i = hashLength; i < static_cast<int>(DNA.length() ); i++) {
 		//cout << i << ' ' << DNA[i] << ' ';
 		//Create a root node if there isn't one
 		if (cursor == NULL) {
@@ -340,7 +340,7 @@ void HashTree::addEntry(const string& DNA, unsigned int chrNum, unsigned int loc
 		}
 
 		//if this is the last node, we have to increment the counter
-		if (i == DNA.length() - 1)
+		if (i == static_cast<int>(DNA.length() ) - 1)
 			nextCursor->addLoc();
 
 		parentCursor = cursor;
@@ -384,7 +384,7 @@ void HashTree::generateTree(string refName) {
 
 	//Load all databases. This only works for 1TB machine.
 	checkdb = new RefDB[refdb.getNumOfChromo()];
-	for (int i = 0; i < refdb.getNumOfChromo(); i++) {
+	for (int i = 0; i < static_cast<int>(refdb.getNumOfChromo() ); i++) {
 		checkdb[i].loadRefFile(refName);
 		checkdb[i].loadChromo(i);
 	}
@@ -473,12 +473,12 @@ bool HashTree::isLeaf() {
 }
 
 unsigned int HashTree::estimateFreqLength(unsigned int hash, unsigned int freqThreshold/*, string DNA*/) {
-	assert(hash < (1 << (2 * hashLength) ) );
+	assert(hash < static_cast<unsigned int>(1 << (2 * hashLength) ) );
 
 	TreeNode* base = root[hash];
 
 	if (base == NULL || base->getLocNum() <= freqThreshold)
-		return hashLength;
+		return static_cast<unsigned int>(hashLength);
 
 	unsigned long long freqSum = 0;
 	freqSum = estimateFreqLengthHelper(base, freqThreshold, freqSum, hashLength/*, DNA*/);
@@ -507,7 +507,7 @@ unsigned long long HashTree::estimateFreqLengthHelper(TreeNode* node, unsigned i
 
 unsigned int HashTree::averageFreqDepth(unsigned int hash, unsigned int depth)
 {
-	assert(hash < (1 << (2 * hashLength) ) );
+	assert(hash < static_cast<unsigned int>(1 << (2 * hashLength) ) );
 
 	TreeNode* base = root[hash];
 
@@ -548,7 +548,7 @@ void HashTree::calculateLenToFreqTable()
 
 	vector< vector<unsigned int> > hashLenTable (tableHeight, vector<unsigned>(tableWidth));
 
-	for(int i=0; i<tableHeight; i++)
+	for(int i = 0; i < static_cast<int>(tableHeight); i++)
 		for(int j=0; j<tableWidth; j++)
 			hashLenTable[i][j] = averageFreqDepth(i, j);
 
@@ -564,10 +564,10 @@ void HashTree::printHashLenTable(string filename)
 	unsigned int tableHeight = 1 << (2 * hashLength);
 	if(&hashLenTable != NULL)
 	{
-		for(int i=0; i<tableHeight; i++)
+		for(int i = 0; i < static_cast<int>(tableHeight); i++)
 		{
 			f << "Index: " << i << " ";
-			for(int j=0; j<tableWidth; j++)
+			for(int j = 0; j < static_cast<int>(tableWidth); j++)
 			{
 				f << hashLenTable[i][j] << "\t";
 			}
@@ -597,8 +597,8 @@ void HashTree::storeHashLenTable(string filename)
 	f.write((char*)&hl, sizeof(int));
 	f.write((char*)&fl, sizeof(int));
 
-	for(int i=0; i<tableHeight; i++)
-		for(int j=0; j<tableWidth; j++)
+	for(int i = 0; i < static_cast<int>(tableHeight); i++)
+		for(int j = 0; j < static_cast<int>(tableWidth); j++)
 		{
 			int h[] = {(int)(hashLenTable[i][j])};
 			f.write((char*)&h, sizeof(int));

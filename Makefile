@@ -1,8 +1,8 @@
 XX = g++
-CPPFLAGS=-O3
+CPPFLAGS=-O3 -DDEBUG
 EXE=getHash getReference readGenerator testHashTree testTemplateClass testThresholdSolver \
     testOptimalSolver testPredictorSolver testHobbesSolver testReference testFastHASHSolver \
-    testGemsSolver testSpacedSeedSolver testBasicSolver testAnalyzeBasic
+    testGemsSolver testSpacedSeedSolver testBasicSolver testAnalyzeBasic testOptimalSolverLN
 
 all: $(EXE)
 
@@ -22,6 +22,9 @@ thresholdSolver.o: thresholdSolver.cc thresholdSolver.h
 	$(CXX) $(CPPFLAGS) -c $<
 	
 optimalSolver.o: optimalSolver.cc optimalSolver.h 
+	$(CXX) $(CPPFLAGS) -c $<
+
+optimalSolverLN.o: optimalSolverLN.cc optimalSolverLN.h 
 	$(CXX) $(CPPFLAGS) -c $<
 
 predictorSolver.o: predictorSolver.cc predictorSolver.h 
@@ -66,6 +69,38 @@ testThresholdSolver: testThresholdSolver.cc thresholdSolver.o HashTree.o RefDB.o
 testOptimalSolver: testOptimalSolver.cc optimalSolver.o HashTree.o RefDB.o KmerHash.o
 	$(CXX) $(CPPFLAGS) -o $@ $^
 
+testOptimalSolverLN: testOptimalSolverLN.cc optimalSolverLN.o HashTree.o RefDB.o KmerHash.o
+	$(CXX) $(CPPFLAGS) -o $@ $^
+
+testPredictorSolver: testPredictorSolver.cc predictorSolver.o HashTree.o RefDB.o KmerHash.o
+	$(CXX) $(CPPFLAGS) -o $@ $^
+
+testHobbesSolver: testHobbesSolver.cc hobbesSolver.o HashTree.o RefDB.o KmerHash.o
+	$(CXX) $(CPPFLAGS) -o $@ $^
+
+testFastHASHSolver: testFastHASHSolver.cc fastHASHSolver.o HashTree.o RefDB.o KmerHash.o
+	$(CXX) $(CPPFLAGS) -o $@ $^
+
+testSpacedSeedSolver: testSpacedSeedSolver.cc spacedSeedSolver.o HashTree.o RefDB.o KmerHash.o
+
+	$(CXX) $(CPPFLAGS) -o $@ $^
+
+testGemsSolver: testGemsSolver.cc fastHASHSolver.o thresholdSolver.o HashTree.o RefDB.o KmerHash.o
+	$(CXX) $(CPPFLAGS) -o $@ $^
+
+testBasicSolver: testBasicSolver.cc basicSolver.o HashTree.o RefDB.o KmerHash.o
+	$(CXX) $(CPPFLAGS) -o $@ $^
+
+testAnalyzeBasic: testAnalyzeBasic.cc analyzeBasic.o RefDB.o KmerHash.o
+	$(CXX) $(CPPFLAGS) -o $@ $^
+
+.PHONY: clean copy
+
+clean:
+	rm *.o $(EXE)
+
+copy: run*.py HashTable RepeatAnalyser SeedTree getHash getReference readGenerator mapSimulator LongHashTable
+	cp $^ ~/data/hashtable/
 testPredictorSolver: testPredictorSolver.cc predictorSolver.o HashTree.o RefDB.o KmerHash.o
 	$(CXX) $(CPPFLAGS) -o $@ $^
 

@@ -23,7 +23,7 @@ public:
 	virtual ~TreeNode();
 
 	//this is a virtual function
-	virtual void setContent(unsigned int chrNum, unsigned int location) {};
+	virtual void setContent(unsigned int chrNum, unsigned int location){};
 
 	//set member variables
 	void setLocNum(unsigned int locNum);
