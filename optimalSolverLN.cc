@@ -298,6 +298,10 @@ void OptimalSolverLN::fillMatrix(string& DNA) {
 		level[0][pos].start = level0[pos][0].start;
 		level[0][pos].end = level0[pos][0].end;
 		level[0][pos].frequency = level0[pos][0].frequency;
+		//Fill up again for tracing back
+		level[0][pos].rstart = level0[pos][0].start;
+		level[0][pos].rend = level0[pos][0].end;
+		level[0][pos].rfreq = level0[pos][0].frequency;
 #ifdef DEBUG
 		cout << 0 << "-" << pos + minLength - 1 << ":" << level[0][pos].start << "-"
 			<< level[0][pos].end << ":" << level[0][pos].frequency << " ";
@@ -447,13 +451,26 @@ int OptimalSolverLN::solveFirstOptimal(int opt_div, int pos, int l) {
 void OptimalSolverLN::backtrace() {
 	int seedIdx = seedNum - 1;
 	int level0lv = readLength - seedNum * minLength - finalDiv;
-	int totalLength = finalDiv + (seedNum - 1) * minLength;
-	seeds[seedIdx].start = level0[level0lv][totalLength].start;
-	seeds[seedIdx].end = level0[level0lv][totalLength].end;
-	seeds[seedIdx].frequency = level0[level0lv][totalLength].frequency;
+	int level0pos = finalDiv + (seedNum - 1) * minLength;
+	seeds[seedIdx].start = level0[level0lv][level0pos].start;
+	seeds[seedIdx].end = level0[level0lv][level0pos].end;
+	seeds[seedIdx].frequency = level0[level0lv][level0pos].frequency;
 
-	for (int i = 0; i < seedNum - 1; i++) {
-		seedIdx = seedNum - 2;
+	int opt_div = finalDiv;
+
+	for (seedIdx = seedNum - 2; seedIdx >= 0; seedIdx--) {
+		seeds[seedIdx].start = level[seedIdx][opt_div].rstart;
+		seeds[seedIdx].end = level[seedIdx][opt_div].rend;
+		seeds[seedIdx].frequency = level[seedIdx][opt_div].rfreq;
+		opt_div = level[seedIdx][opt_div].lend + 1 - seedIdx * minLength;
+	}
+
+	for (int i = 0; i < seedNum; i++) {
+		cout << "Seed[" << i << "]: start: " << seeds[i].start;
+		cout << " end: " << seeds[i].end;
+		cout << " frequency: " << seeds[i].frequency;
+		cout << endl;
 	}
 
 }
+
