@@ -92,12 +92,18 @@ void OptimalSolverLN::init(int readLength, int seedNum) {
 
 	//For the matrix, we need to consider all cases, while leaving
 	//the last minLength out (because we don't need to)
+	if (seedNum > 1)
+		matrixSize = (readLength + 1 - minLength * seedNum) * (seedNum - 1);
+	else
+		matrixSize = readLength + 1 - minLength;
+	/*
 	for (int i = 0; i < this->seedNum - 1; i++) {
 		//Notice that for the rest levels, we do not need to consider the last
 		//hashLength positions
 		lvPosCount = readLength + 1 - minLength * (i + 2);
 		matrixSize += lvPosCount;
 	}
+	*/
 
 #ifdef DEBUG
 	cout << "matrixSize: " << matrixSize << endl;
@@ -125,18 +131,25 @@ void OptimalSolverLN::init(int readLength, int seedNum) {
 	//Just to check the baseSize
 	assert (baseProgress == baseSize);
 
-	//Fill the level pointers. No need to have the last level
-	level.resize(seedNum - 1);
-	levelIdx = 0;
-	int matrixProgress = 0;
-	for (int i = 0; i < seedNum - 1; i++) {
-		lvPosCount = readLength + 1 - minLength * (i + 2);
-		level[i] = matrix + matrixProgress;
-		matrixProgress += lvPosCount;
+	if (seedNum > 1) {
+		//Fill the level pointers. No need to have the last level
+		level.resize(seedNum - 1);
+		levelIdx = 0;
+		int matrixProgress = 0;
+		for (int i = 0; i < seedNum - 1; i++) {
+			lvPosCount = readLength + 1 - minLength * seedNum;
+			level[i] = matrix + matrixProgress;
+			matrixProgress += lvPosCount;
+		}
+
+		//Just to check the matrixSize
+		assert (matrixProgress == matrixSize);
+	}
+	else {
+		level.resize(1);
+		level[0] = matrix;
 	}
 
-	//Just to check the matrixSize
-	assert (matrixProgress == matrixSize);
 
 	//Initialize all the seeds
 	seeds.resize(seedNum);
@@ -293,7 +306,7 @@ void OptimalSolverLN::fillMatrix(string& DNA) {
 #endif
 
 	//Fill level 0
-	int lvPosCount = readLength - minLength * 2;
+	int lvPosCount = readLength - minLength * seedNum;
 	for (int pos = 0; pos <= lvPosCount; pos++) {
 		level[0][pos].start = level0[pos][0].start;
 		level[0][pos].end = level0[pos][0].end;
@@ -316,7 +329,7 @@ void OptimalSolverLN::fillMatrix(string& DNA) {
 	//Now calculate the rest levels
 	for (int l = 1; l < seedNum - 1; l++) {
 
-		lvPosCount = readLength - minLength * (l + 2);
+		lvPosCount = readLength - minLength * seedNum;
 		opt_div = solveFirstOptimal(lvPosCount, lvPosCount, l);
 #ifdef DEBUG
 		cout << "lvPosCount: " << lvPosCount << " opt_div: " << opt_div << endl;
@@ -449,20 +462,27 @@ int OptimalSolverLN::solveFirstOptimal(int opt_div, int pos, int l) {
 }
 
 void OptimalSolverLN::backtrace() {
-	int seedIdx = seedNum - 1;
-	int level0lv = readLength - seedNum * minLength - finalDiv;
-	int level0pos = finalDiv + (seedNum - 1) * minLength;
-	seeds[seedIdx].start = level0[level0lv][level0pos].start;
-	seeds[seedIdx].end = level0[level0lv][level0pos].end;
-	seeds[seedIdx].frequency = level0[level0lv][level0pos].frequency;
-
-	int opt_div = finalDiv;
-
-	for (seedIdx = seedNum - 2; seedIdx >= 0; seedIdx--) {
-		seeds[seedIdx].start = level[seedIdx][opt_div].rstart;
-		seeds[seedIdx].end = level[seedIdx][opt_div].rend;
-		seeds[seedIdx].frequency = level[seedIdx][opt_div].rfreq;
-		opt_div = level[seedIdx][opt_div].lend + 1 - seedIdx * minLength;
+	if (seedNum > 1) {
+		int seedIdx = seedNum - 1;
+		int level0lv = readLength - seedNum * minLength - finalDiv;
+		int level0pos = finalDiv + (seedNum - 1) * minLength;
+		seeds[seedIdx].start = level0[level0lv][level0pos].start;
+		seeds[seedIdx].end = level0[level0lv][level0pos].end;
+		seeds[seedIdx].frequency = level0[level0lv][level0pos].frequency;
+	
+		int opt_div = finalDiv;
+	
+		for (seedIdx = seedNum - 2; seedIdx >= 0; seedIdx--) {
+			seeds[seedIdx].start = level[seedIdx][opt_div].rstart;
+			seeds[seedIdx].end = level[seedIdx][opt_div].rend;
+			seeds[seedIdx].frequency = level[seedIdx][opt_div].rfreq;
+			opt_div = level[seedIdx][opt_div].lend + 1 - seedIdx * minLength;
+		}
+	}
+	else {
+		seeds[0].start = level0[readLength - minLength][0].start;
+		seeds[0].end = level0[readLength - minLength][0].end;
+		seeds[0].frequency = level0[readLength - minLength][0].frequency;
 	}
 }
 
