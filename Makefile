@@ -1,5 +1,6 @@
 XX = g++
-CPPFLAGS=-g -DDEBUG
+CPPFLAGS=-O3
+#CPPFLAGS=-g -DDEBUG
 EXE=getHash getReference readGenerator testHashTree testTemplateClass testThresholdSolver \
     testOptimalSolver testPredictorSolver testHobbesSolver testReference testFastHASHSolver \
     testGemsSolver testSpacedSeedSolver testBasicSolver testAnalyzeBasic testOptimalSolverLN
