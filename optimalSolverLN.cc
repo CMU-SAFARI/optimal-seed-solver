@@ -507,12 +507,24 @@ void OptimalSolverLN::sortSeeds(T relation) {
 	sort(seeds.begin(), seeds.end(), relation);
 }
 
-void OptimalSolverLN::print() {
+void OptimalSolverLN::printSeeds() {
 	for (int i = 0; i < seedNum; i++) {
 		cout << "Seed[" << i << "]: start: " << seeds[i].start;
 		cout << " end: " << seeds[i].end;
 		cout << " frequency: " << seeds[i].frequency;
 		cout << endl;
 	}
+}
+
+void OptimalSolverLN::printFreqs() {
+	for (int i = 0; i < seedNum; i++)
+		cout << seeds[i].frequency << " ";
+	cout << endl;
+}
+
+void OptimalSolverLN::printLength() {
+	for (int i = 0; i < seedNum; i++)
+		cout << seeds[i].end + 1 - seeds[i].start << " ";
+	cout << endl;
 }
 
