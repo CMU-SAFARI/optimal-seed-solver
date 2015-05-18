@@ -464,13 +464,35 @@ void OptimalSolverLN::backtrace() {
 		seeds[seedIdx].frequency = level[seedIdx][opt_div].rfreq;
 		opt_div = level[seedIdx][opt_div].lend + 1 - seedIdx * minLength;
 	}
+}
 
+bool OptimalSolverLN::compFreq(Cell left, Cell right) {
+	return (left.frequency < right.frequency);
+}
+
+bool OptimalSolverLN::compLength(Cell left, Cell right) {
+	return ( (left.end + 1 - left.start) < (right.end + 1 - right.start) );
+}
+
+void OptimalSolverLN::sortOfFreq() {
+	sortSeeds(this->compFreq);
+}
+
+void OptimalSolverLN::sortOfLength() {
+	sortSeeds(this->compLength);
+}
+
+template<class T>
+void OptimalSolverLN::sortSeeds(T relation) {
+	sort(seeds.begin(), seeds.end(), relation);
+}
+
+void OptimalSolverLN::print() {
 	for (int i = 0; i < seedNum; i++) {
 		cout << "Seed[" << i << "]: start: " << seeds[i].start;
 		cout << " end: " << seeds[i].end;
 		cout << " frequency: " << seeds[i].frequency;
 		cout << endl;
 	}
-
 }
 

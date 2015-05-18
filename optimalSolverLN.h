@@ -1,5 +1,6 @@
 #include "HashTree.h"
 #include <vector>
+#include <algorithm>
 
 using namespace std;
 
@@ -43,6 +44,8 @@ public:
 	unsigned int calculateLastDiv();
 	unsigned int calcualteFreq();
 	void print();
+	void sortOfFreq();
+	void sortOfLength();
 	
 	void backtrace();
 	
@@ -56,6 +59,11 @@ private:
 	void loadL0(string& DNA);
 	//Returns the location of the first optimal div in read
 	int solveFirstOptimal(int opt_div, int pos, int l);
+	//Sort the seeds
+	template<class T>
+	void sortSeeds(T relation);
+	static bool compFreq(Cell left, Cell right);
+	static bool compLength(Cell left, Cell right);
 
 	//This is for debugging
 	bool L0Loaded;
