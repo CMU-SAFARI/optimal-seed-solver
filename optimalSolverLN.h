@@ -43,9 +43,9 @@ public:
 	void fillMatrix(string& DNA);
 	unsigned int calculateLastDiv();
 	unsigned int calcualteFreq();
-	void printSeeds();
-	void printFreqs();
-	void printLength();
+	void printSeeds(ostream& stream);
+	void printFreqs(ostream& stream);
+	void printLength(ostream& stream);
 	void sortOfFreq();
 	void sortOfLength();
 	
