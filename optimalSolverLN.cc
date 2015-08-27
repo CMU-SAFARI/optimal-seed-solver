@@ -153,6 +153,10 @@ void OptimalSolverLN::init(int readLength, int seedNum) {
 
 	//Initialize all the seeds
 	seeds.resize(seedNum);
+
+	//Initialize statistics
+	processed_reads = 0;
+	div_travel.resize(readLength, 0);
 }
 
 void OptimalSolverLN::reset() {
@@ -346,21 +350,62 @@ void OptimalSolverLN::fillMatrix(string& DNA) {
 
 		for (int pos = lvPosCount - 1; pos >= 0; pos--) {
 
-			if (opt_div > pos)
-				opt_div = pos;
+			int prev_opt_div = level[l][pos+1].rstart - l * minLength;
+#ifdef DEBUG
+			cout << "prev_opt_div: " << prev_opt_div << endl;
+#endif
+			
+			if (1 == 1 && prev_opt_div <= pos && level0[pos - prev_opt_div][prev_opt_div + l * minLength].frequency == level[l][pos+1].rfreq) {
+#ifdef TEST
+				cout << "same as previous; pos: " << pos << endl;
+				cout.flush();
+#endif
+				level[l][pos].lstart = level[l][pos+1].lstart;
+				level[l][pos].lend = level[l][pos+1].lend;
+				level[l][pos].lfreq = level[l][pos+1].lfreq;
+				level[l][pos].rstart = level0[pos - prev_opt_div][opt_div + l * minLength].start;
+				level[l][pos].rend = level0[pos - prev_opt_div][prev_opt_div + l * minLength].end;
+				level[l][pos].rfreq = level0[pos - prev_opt_div][prev_opt_div + l * minLength].frequency;
+				level[l][pos].start = level[l][pos].lstart;
+				level[l][pos].end = level[l][pos].rend;
+				level[l][pos].frequency = level[l][pos].lfreq + level[l][pos].rfreq;
+				div_travel[0]++;
+			}
+			else {
+				if (opt_div > pos)
+					opt_div = pos;
 
-			opt_div = solveFirstOptimal(opt_div, pos, l);
+				opt_div = solveFirstOptimal(opt_div, pos, l);
 
-			level[l][pos].lstart = level[l-1][opt_div].start;
-			level[l][pos].lend = level[l-1][opt_div].end;
-			level[l][pos].lfreq = level[l-1][opt_div].frequency;
-			level[l][pos].rstart = level0[pos - opt_div][opt_div + l * minLength].start;
-			level[l][pos].rend = level0[pos - opt_div][opt_div + l * minLength].end;
-			level[l][pos].rfreq = level0[pos - opt_div][opt_div + l * minLength].frequency;
-			level[l][pos].start = level[l][pos].lstart;
-			level[l][pos].end = level[l][pos].rend;
-			level[l][pos].frequency = level[l][pos].lfreq + level[l][pos].rfreq;
+				level[l][pos].lstart = level[l-1][opt_div].start;
+				level[l][pos].lend = level[l-1][opt_div].end;
+				level[l][pos].lfreq = level[l-1][opt_div].frequency;
+				level[l][pos].rstart = level0[pos - opt_div][opt_div + l * minLength].start;
+				level[l][pos].rend = level0[pos - opt_div][opt_div + l * minLength].end;
+				level[l][pos].rfreq = level0[pos - opt_div][opt_div + l * minLength].frequency;
+				level[l][pos].start = level[l][pos].lstart;
+				level[l][pos].end = level[l][pos].rend;
+				level[l][pos].frequency = level[l][pos].lfreq + level[l][pos].rfreq;
+			}
 		}
+
+#ifdef TEST
+		cout << "freq: ";
+		for (int pos = 0; pos <= lvPosCount; pos++) {
+			cout << level[l][pos].frequency << " ";
+		}
+		cout << endl;
+		cout << "rstart: ";
+		for (int pos = 0; pos <= lvPosCount; pos++) {
+			cout << level[l][pos].rstart << " ";
+		}
+		cout << endl;
+		cout << "rfreq: ";
+		for (int pos = 0; pos <= lvPosCount; pos++) {
+			cout << level[l][pos].rfreq << " ";
+		}
+		cout << endl;
+#endif
 #ifdef DEBUG
 		cout << "l-" << l << "  ";
 		for (int pos = 0; pos <= lvPosCount; pos++) {
@@ -414,10 +459,15 @@ unsigned int OptimalSolverLN::calcualteFreq() {
 unsigned int OptimalSolverLN::solveDNA(string& DNA) {
 	fillMatrix(DNA);
 	calculateLastDiv();
+	processed_reads++;
 	return calcualteFreq();
 }
 
 int OptimalSolverLN::solveFirstOptimal(int opt_div, int pos, int l) {
+	bool print = false;
+	if (pos == 27 || pos == 55 || pos == 70)
+		print = true;
+
 	int lend = level[l-1][opt_div].end;
 	int lfreq = level[l-1][opt_div].frequency;
 	int rfreq = level0[pos - opt_div][opt_div + l * minLength].frequency;
@@ -425,14 +475,24 @@ int OptimalSolverLN::solveFirstOptimal(int opt_div, int pos, int l) {
 	int prev_lfreq = lfreq;
 	int prev_rfreq = rfreq;
 
-	for (int div = pos - 1; div >= 0; div--) {
+#ifdef TEST
+	if (print) {
+		cout << "div: " << opt_div << " lfreq: " << lfreq << " rfreq: " << rfreq
+			<< " prev_lfreq: " << prev_lfreq << " prev_rfreq: " << prev_rfreq
+			<< " total: " << lfreq + rfreq << endl;
+	}
+#endif
+	int div;
+	for (div = opt_div - 1; div >= 0; div--) {
 		lfreq = level[l-1][div].frequency;
 		rfreq = level0[pos - div][div + l * minLength].frequency;
 
-#ifdef DEBUG
-		cout << "div: " << div << " lfreq: " << lfreq << " rfreq: " << rfreq
-			<< " prev_lfreq: " << prev_lfreq << " prev_rfreq: " << prev_rfreq
-			<< " total: " << lfreq + rfreq;
+#ifdef TEST
+		if (print) {
+			cout << "div: " << div << " lfreq: " << lfreq << " rfreq: " << rfreq
+				<< " prev_lfreq: " << prev_lfreq << " prev_rfreq: " << prev_rfreq
+				<< " total: " << lfreq + rfreq << endl;
+		}
 #endif
 
 		if (lfreq + rfreq <= minFreq) {
@@ -441,8 +501,10 @@ int OptimalSolverLN::solveFirstOptimal(int opt_div, int pos, int l) {
 		}
 
 		//early divider termination
-		if (lfreq - prev_lfreq > prev_rfreq)
+		if (lfreq - prev_lfreq > prev_rfreq) {
+			div--;
 			break;
+		}
 
 		//divider sprinting left
 		if (div + l * minLength > lend + 1) {
@@ -457,11 +519,18 @@ int OptimalSolverLN::solveFirstOptimal(int opt_div, int pos, int l) {
 		prev_rfreq = rfreq;
 
 	}
+	
+	div_travel[opt_div - 1 - div]++;
+
+#ifdef TEST
+	if (print)
+		cout << " opt_div: " << opt_div << endl;
+#endif
 
 	return opt_div;
 }
 
-void OptimalSolverLN::backtrace() {
+void OptimalSolverLN::backtrack() {
 	if (seedNum > 1) {
 		int seedIdx = seedNum - 1;
 		int level0lv = readLength - seedNum * minLength - finalDiv;
@@ -528,3 +597,8 @@ void OptimalSolverLN::printLength(ostream& stream) {
 	stream << endl;
 }
 
+void OptimalSolverLN::printStats(ostream& stream) {
+	for (int i = 0; i < readLength; i++)
+		stream << div_travel[i] << " ";
+	stream << endl;
+}

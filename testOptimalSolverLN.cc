@@ -76,7 +76,7 @@ int main(int argc, const char* argv[]) {
 				//Solve
 				if (read.find('N') == string::npos) {
 					frequency = solver.solveDNA(read);
-					solver.backtrace();
+					solver.backtrack();
 					solver.sortOfFreq();
 					solver.printFreqs(freqOutput);
 					solver.printLength(freqOutput);
@@ -115,9 +115,10 @@ int main(int argc, const char* argv[]) {
 			solver.init(readLength, seedNum);
 			solver.feedL0();
 			solver.solveDNA(dummy);
-			solver.backtrace();
+			solver.backtrack();
 			solver.sortOfFreq();
 			solver.printFreqs(cout);
+			solver.printStats(cout);
 			cin >> seedNum;
 		}
 	}

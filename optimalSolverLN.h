@@ -46,10 +46,11 @@ public:
 	void printSeeds(ostream& stream);
 	void printFreqs(ostream& stream);
 	void printLength(ostream& stream);
+	void printStats(ostream& stream);
 	void sortOfFreq();
 	void sortOfLength();
 	
-	void backtrace();
+	void backtrack();
 	
 	//For debugging
 	void setMinLength(int minLength);
@@ -69,9 +70,11 @@ private:
 
 	//This is for debugging
 	bool L0Loaded;
-	
+
+	//Seed database, currently being a suffix tree	
 	HashTree tree;
 
+	//Internal data structures
 	int readLength;
 	int seedNum;
 	int minLength;
@@ -88,4 +91,8 @@ private:
 	vector<Cell> seeds;
 
 	unsigned int finalDiv;
+
+	//Statistics
+	vector<unsigned long long> div_travel;
+	unsigned int processed_reads;
 };

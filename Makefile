@@ -1,8 +1,9 @@
 XX = g++
-CPPFLAGS=-O3
+#CPPFLAGS=-O3
 #CPPFLAGS=-g -DDEBUG
+CPPFLAGS=-g -DTEST
 EXE=getHash getReference readGenerator testHashTree testTemplateClass testThresholdSolver \
-    testOptimalSolver testPredictorSolver testHobbesSolver testReference testFastHASHSolver \
+    testOptimalSolver testHobbesSolver testReference testFastHASHSolver \
     testGemsSolver testSpacedSeedSolver testBasicSolver testAnalyzeBasic testOptimalSolverLN
 
 all: $(EXE)
