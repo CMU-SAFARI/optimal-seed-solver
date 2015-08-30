@@ -93,6 +93,6 @@ private:
 	unsigned int finalDiv;
 
 	//Statistics
-	vector<unsigned long long> div_travel;
-	unsigned int processed_reads;
+	vector<unsigned long long> divTravel;
+	unsigned int processedReads;
 };

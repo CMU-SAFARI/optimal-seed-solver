@@ -33,14 +33,18 @@ int main(int argc, const char* argv[]) {
 		char* benchName = strtok(benchFileName, ".");
 
 		ofstream output;
-		ofstream freqOutput;
 		output.open( (string(benchName) + string(".optimalLN") ).c_str() );
+#ifdef FREQ
+		ofstream freqOutput;
 		freqOutput.open( (string(benchName) + string(".optimalLN_freq") ).c_str() );
+#endif
 
 		while (seedNum > 0) {
 			cout << "seedNum: " << seedNum << endl;
 			output << "seedNum: " << seedNum << endl;
+#ifdef FREQ
 			freqOutput << "seedNum: " << seedNum << endl;
+#endif
 
 			frequencyCounter.clear();
 
@@ -76,10 +80,12 @@ int main(int argc, const char* argv[]) {
 				//Solve
 				if (read.find('N') == string::npos) {
 					frequency = solver.solveDNA(read);
+#ifdef FREQ
 					solver.backtrack();
 					solver.sortOfFreq();
 					solver.printFreqs(freqOutput);
 					solver.printLength(freqOutput);
+#endif
 					if (frequencyCounter.find(frequency) == frequencyCounter.end() )
 						frequencyCounter[frequency] = 1;
 					else
@@ -98,9 +104,14 @@ int main(int argc, const char* argv[]) {
 				output << iter->first << ": " << iter->second << endl;
 
 			cin >> seedNum;
+
+			solver.printStats(cout);
+			solver.printStats(output);
 		}
 		output.close();
+#ifdef FREQ
 		freqOutput.close();
+#endif
 
 	}
 	else if (argc == 1) {

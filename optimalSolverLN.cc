@@ -155,8 +155,8 @@ void OptimalSolverLN::init(int readLength, int seedNum) {
 	seeds.resize(seedNum);
 
 	//Initialize statistics
-	processed_reads = 0;
-	div_travel.resize(readLength, 0);
+	processedReads = 0;
+	divTravel.resize(readLength, 0);
 }
 
 void OptimalSolverLN::reset() {
@@ -369,7 +369,7 @@ void OptimalSolverLN::fillMatrix(string& DNA) {
 				level[l][pos].start = level[l][pos].lstart;
 				level[l][pos].end = level[l][pos].rend;
 				level[l][pos].frequency = level[l][pos].lfreq + level[l][pos].rfreq;
-				div_travel[0]++;
+				divTravel[0]++;
 			}
 			else {
 				if (opt_div > pos)
@@ -459,7 +459,7 @@ unsigned int OptimalSolverLN::calcualteFreq() {
 unsigned int OptimalSolverLN::solveDNA(string& DNA) {
 	fillMatrix(DNA);
 	calculateLastDiv();
-	processed_reads++;
+	processedReads++;
 	return calcualteFreq();
 }
 
@@ -520,7 +520,7 @@ int OptimalSolverLN::solveFirstOptimal(int opt_div, int pos, int l) {
 
 	}
 	
-	div_travel[opt_div - 1 - div]++;
+	divTravel[opt_div - 1 - div]++;
 
 #ifdef TEST
 	if (print)
@@ -598,7 +598,16 @@ void OptimalSolverLN::printLength(ostream& stream) {
 }
 
 void OptimalSolverLN::printStats(ostream& stream) {
-	for (int i = 0; i < readLength; i++)
-		stream << div_travel[i] << " ";
+	unsigned long long sumOfTravel = 0;
+	stream << "divTravel distribution: ";
+	for (int i = 0; i < readLength; i++) {
+		stream << divTravel[i] << " ";
+		sumOfTravel += divTravel[i] * i;
+	}
+	stream << endl;
+
+	unsigned long long prefixesPerRead = (readLength + 1 - seedNum * minLength) * (seedNum - 2) + 1;
+	unsigned long long totalPrefixes = processedReads * prefixesPerRead;
+	stream << "divTravel per prefix: " << (double) sumOfTravel / totalPrefixes << endl;
 	stream << endl;
 }
