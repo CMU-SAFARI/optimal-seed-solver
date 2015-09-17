@@ -474,6 +474,7 @@ int OptimalSolverLN::solveFirstOptimal(int opt_div, int pos, int l) {
 	int minFreq = lfreq + rfreq;
 	int prev_lfreq = lfreq;
 	int prev_rfreq = rfreq;
+	int next_lfreq = lfreq;
 
 #ifdef TEST
 	if (print) {
@@ -483,8 +484,15 @@ int OptimalSolverLN::solveFirstOptimal(int opt_div, int pos, int l) {
 	}
 #endif
 	int div;
+	int totalTravel = 0;
 	for (div = opt_div - 1; div >= 0; div--) {
 		lfreq = level[l-1][div].frequency;
+		
+		//divider sprinting left
+		if (lfreq == prev_lfreq && div > 0 && lfreq == level[l-1][div-1].frequency) {
+			continue;
+		}
+
 		rfreq = level0[pos - div][div + l * minLength].frequency;
 
 #ifdef TEST
@@ -506,21 +514,16 @@ int OptimalSolverLN::solveFirstOptimal(int opt_div, int pos, int l) {
 			break;
 		}
 
-		//divider sprinting left
-		if (div + l * minLength > lend + 1) {
-			div = lend + 1 - l * minLength;
-		}
-
 #ifdef DEBUG
 		cout << " div_after: " << div << endl;
 #endif
 
 		prev_lfreq = lfreq;
 		prev_rfreq = rfreq;
-
+		totalTravel++;
 	}
 	
-	divTravel[opt_div - 1 - div]++;
+	divTravel[totalTravel]++;
 
 #ifdef TEST
 	if (print)
