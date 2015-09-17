@@ -356,6 +356,10 @@ void OptimalSolverLN::fillMatrix(string& DNA) {
 #endif
 			//Testing knob
 			if (true && prev_opt_div <= pos && level0[pos - prev_opt_div][prev_opt_div + l * minLength].frequency == level[l][pos+1].rfreq) {
+#ifdef TEST
+				cout << "same as previous; pos: " << pos << endl;
+				cout.flush();
+#endif
 				level[l][pos].lstart = level[l][pos+1].lstart;
 				level[l][pos].lend = level[l][pos+1].lend;
 				level[l][pos].lfreq = level[l][pos+1].lfreq;
@@ -366,10 +370,6 @@ void OptimalSolverLN::fillMatrix(string& DNA) {
 				level[l][pos].end = level[l][pos].rend;
 				level[l][pos].frequency = level[l][pos].lfreq + level[l][pos].rfreq;
 				divTravel[0]++;
-#ifdef TEST
-				cout << "same as previous; pos: " << pos << " freq: " << level[l][pos].frequency << endl;
-				cout.flush();
-#endif
 			}
 			else {
 				if (opt_div > pos)
@@ -465,9 +465,8 @@ unsigned int OptimalSolverLN::solveDNA(string& DNA) {
 
 int OptimalSolverLN::solveFirstOptimal(int opt_div, int pos, int l) {
 	bool print = false;
-#ifdef TEST
-	print = true;
-#endif
+	if (pos == 27 || pos == 55 || pos == 70)
+		print = true;
 
 	int lend = level[l-1][opt_div].end;
 	int lfreq = level[l-1][opt_div].frequency;
@@ -525,7 +524,7 @@ int OptimalSolverLN::solveFirstOptimal(int opt_div, int pos, int l) {
 
 #ifdef TEST
 	if (print)
-		cout << " opt_div: " << opt_div << " minFreq: " << minFreq << endl;
+		cout << " opt_div: " << opt_div << endl;
 #endif
 
 	return opt_div;
