@@ -356,6 +356,10 @@ void OptimalSolverLN::fillMatrix(string& DNA) {
 #endif
 			//Testing knob
 			if (true && prev_opt_div <= pos && level0[pos - prev_opt_div][prev_opt_div + l * minLength].frequency == level[l][pos+1].rfreq) {
+#ifdef TEST
+				cout << "same as previous; pos: " << pos << endl;
+				cout.flush();
+#endif
 				level[l][pos].lstart = level[l][pos+1].lstart;
 				level[l][pos].lend = level[l][pos+1].lend;
 				level[l][pos].lfreq = level[l][pos+1].lfreq;
@@ -366,10 +370,6 @@ void OptimalSolverLN::fillMatrix(string& DNA) {
 				level[l][pos].end = level[l][pos].rend;
 				level[l][pos].frequency = level[l][pos].lfreq + level[l][pos].rfreq;
 				divTravel[0]++;
-#ifdef TEST
-				cout << "same as previous; pos: " << pos << " freq: " << level[l][pos].frequency << endl;
-				cout.flush();
-#endif
 			}
 			else {
 				if (opt_div > pos)
@@ -470,6 +470,7 @@ int OptimalSolverLN::solveFirstOptimal(int opt_div, int pos, int l) {
 	int minFreq = lfreq + rfreq;
 	int prev_lfreq = lfreq;
 	int prev_rfreq = rfreq;
+	int next_lfreq = lfreq;
 
 #ifdef TEST
 	cout << "div: " << opt_div << " lfreq: " << lfreq << " rfreq: " << rfreq
@@ -477,8 +478,15 @@ int OptimalSolverLN::solveFirstOptimal(int opt_div, int pos, int l) {
 		<< " total: " << lfreq + rfreq << endl;
 #endif
 	int div;
+	int totalTravel = 0;
 	for (div = opt_div - 1; div >= 0; div--) {
 		lfreq = level[l-1][div].frequency;
+		
+		//divider sprinting left
+		if (lfreq == prev_lfreq && div > 0 && lfreq == level[l-1][div-1].frequency) {
+			continue;
+		}
+
 		rfreq = level0[pos - div][div + l * minLength].frequency;
 
 #ifdef TEST
@@ -498,21 +506,16 @@ int OptimalSolverLN::solveFirstOptimal(int opt_div, int pos, int l) {
 			break;
 		}
 
-		//divider sprinting left
-		if (div + l * minLength > lend + 1) {
-			div = lend + 1 - l * minLength;
-		}
-
 #ifdef DEBUG
 		cout << " div_after: " << div << endl;
 #endif
 
 		prev_lfreq = lfreq;
 		prev_rfreq = rfreq;
-
+		totalTravel++;
 	}
 	
-	divTravel[opt_div - 1 - div]++;
+	divTravel[totalTravel]++;
 
 #ifdef TEST
 	cout << " opt_div: " << opt_div << " minFreq: " << minFreq << endl;
