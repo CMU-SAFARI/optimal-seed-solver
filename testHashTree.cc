@@ -11,13 +11,18 @@ int main(int argc, const char* argv[]) {
 	unsigned int estLength;
 
 
-	if (argc != 2) {
-		cerr << "Please also put the reference file name" << endl;
+	if (argc != 2 && argc != 3) {
+		cerr << "Help:" << endl;
+		cerr << "To generate the tree, please run: $ ./testHashTree referenceName.fasta treeName.tree" << endl;
+		cerr << "To query the tree, please run: $ ./testHashTree treeName.tree" << endl;
 		exit(1);
 	}
 
-	//tree.generateTree(argv[1]);
-	//tree.storeTree("test.tree");
+	if (argc == 3) {
+		tree.generateTree(argv[1]);
+		tree.storeTree(argv[2]);
+		exit(0);
+	}
 	tree.loadTree(argv[1]);
 	hash.setKmerSize(tree.getHashLength() );
 
