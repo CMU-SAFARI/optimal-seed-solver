@@ -42,10 +42,10 @@ selection mechanism.
 
 + **KmerHash.h, KmerHash.cc**: a hash function that transforms a ASCII string into a 64-bit int number.
 + **HashTree.h, HashTree.cc**: a suffix tree to index the reference genome. Notice that this
-implementation is not optimized for performance. It was initially built for gathering statistics of
+implementation is **not optimized for performance**. It was initially built for gathering statistics of
 the reference genome. For human reference genome it needs 350 GB main memory for indexing. Please
-consider replacing HashTree with BWT implementations if you plan to integrate OSS into production
-code.
+consider replacing HashTree with BWT implementations if you plan to integrate OSS into a production
+mapper.
 + **RefDB.h, RefDB.cc**: a database that caches the reference genome.
 
 ### Main classes:
